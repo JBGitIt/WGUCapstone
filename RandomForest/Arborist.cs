@@ -28,7 +28,7 @@ namespace RandomForest
             c_COLLforest = new List<DecisionTree>();
         }
 
-        public object Predict(IEnumerable<object> r_COLLfeatures)
+        public object[] Predict(IEnumerable<object> r_COLLfeatures)
         {
             Dictionary<object, int> l_COLLresultCounts = new Dictionary<object, int>();
             foreach (DecisionTree l_OBJtree in c_COLLforest)
@@ -45,23 +45,61 @@ namespace RandomForest
             }
 
             double l_DBLresult = 0;
+            double l_DBLhigh = 0;
+            double l_DBLlow = Double.PositiveInfinity;
             int l_INTresultsCount = 0;
+            int l_INTabovePrediction = 0;
+            int l_INTbelowPrediction = 0;
+
             if (double.TryParse(l_COLLresultCounts.First().Key.ToString(), out l_DBLresult))
             {
                 foreach (object l_OBJkey in l_COLLresultCounts.Keys)
                 {
                     double l_DBLkey = 0;
+
                     if (double.TryParse(l_OBJkey.ToString(), out l_DBLkey))
                     {
                         l_DBLresult += l_DBLkey * l_COLLresultCounts[l_OBJkey];
                         l_INTresultsCount += l_COLLresultCounts[l_OBJkey];
+                        if(Convert.ToDouble((decimal)l_OBJkey) > l_DBLhigh)
+                        {
+                            l_DBLhigh = Convert.ToDouble((decimal)l_OBJkey);
+                        }
+                        if(Convert.ToDouble((decimal)l_OBJkey) < l_DBLlow)
+                        {
+                            l_DBLlow = Convert.ToDouble((decimal)l_OBJkey);
+                        }
                     }
                     else
                     {
                         throw new Exception("How the F...");
                     }
                 }
-                return (l_DBLresult / l_INTresultsCount);
+
+                double l_DBLprediction = l_DBLresult / l_INTresultsCount;
+
+                foreach (object l_OBJkey in l_COLLresultCounts.Keys)
+                {
+                    double l_DBLkey = 0;
+
+                    if (double.TryParse(l_OBJkey.ToString(), out l_DBLkey))
+                    {
+                        if (Convert.ToDouble((decimal)l_OBJkey) >= l_DBLprediction)
+                        {
+                            l_INTabovePrediction += l_COLLresultCounts[l_OBJkey];
+                        }
+                        if (Convert.ToDouble((decimal)l_OBJkey) < l_DBLprediction)
+                        {
+                            l_INTbelowPrediction += l_COLLresultCounts[l_OBJkey]; 
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("How the F...");
+                    }
+                }
+
+                return new object[] { l_DBLprediction, l_DBLhigh, l_DBLlow, l_INTabovePrediction, l_INTbelowPrediction };
             }
 
             else
@@ -76,7 +114,7 @@ namespace RandomForest
                         l_OBJcommonResult = l_OBJkey;
                     }
                 }
-                return l_OBJcommonResult;
+                return new object[] { l_OBJcommonResult, null, null };
             }
         }
 

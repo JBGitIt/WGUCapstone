@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using RandomForest;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 
 //List<object> testDataSet = new List<object>
@@ -72,6 +73,9 @@ Random rand = new Random();
 
 List<object> l_COLLdata = new List<object>();
 List<object> l_COLLclassifications = new List<object>();
+List<object> l_COLLclassificationAmounts = new List<object>();
+List<object> l_COLLdataAmounts = new List<object>();
+List<DateTime> l_COLLdates = new List<DateTime>();
 //using (SqlConnection l_OBJsqlConn = new SqlConnection("Server=MVFCU-SQL;Database=MVFCUCustom_Dev;Integrated Security=SSPI"))
 using(SqlConnection l_OBJsqlConn = new SqlConnection("Server=localhost;Database=WGUCapstone;Integrated Security=SSPI;TrustServerCertificate=True"))
 {
@@ -87,19 +91,37 @@ using(SqlConnection l_OBJsqlConn = new SqlConnection("Server=localhost;Database=
         {
             l_COLLdata.Add(new object[]
             {
-                 l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_BUSLOANSBillions"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_CPIAUCSL"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_DPRIMEPercent"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_DPSACBW027SBOGBillions"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_EXPGSBillions"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_IMPGSBillions"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_RHEACBW027SBOGBillions"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_TLRESCONBillions"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_UNRATEPercent"))
-                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T1_GDPBillions"))
+                 l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_BUSLOANSPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_CPIAUCSLPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_DPRIMEPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_DPSACBW027SBOGPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_EXPGSPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_IMPGSPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_RHEACBW027SBOGPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_TLRESCONPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_UNRATEPercentChange"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_GDPPercentChange"))
             });
 
-            l_COLLclassifications.Add(l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_GDPBillions")));
+            l_COLLclassifications.Add(l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T3_GDPPercentChange")));
+
+            l_COLLdates.Add(l_OBJsqlReader.GetDateTime(l_OBJsqlReader.GetOrdinal("T2_Date")));
+
+            l_COLLdataAmounts.Add(new object[]
+            {
+                 l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_BUSLOANSBillions"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_CPIAUCSL"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_DPRIMEPercent"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_DPSACBW027SBOGBillions"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_EXPGSBillions"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_IMPGSBillions"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_RHEACBW027SBOGBillions"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_TLRESCONBillions"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_UNRATEPercent"))
+                ,l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T2_GDPBillions"))
+            });
+
+            l_COLLclassificationAmounts.Add(l_OBJsqlReader.GetDecimal(l_OBJsqlReader.GetOrdinal("T3_GDPBillions")));
         }
     }
 
@@ -142,22 +164,97 @@ using(SqlConnection l_OBJsqlConn = new SqlConnection("Server=localhost;Database=
 
 IEnumerable<object> l_COLLtrainData = l_COLLdata.Take(l_COLLdata.Count / 2);
 IEnumerable<object> l_COLLtrainClassifications = l_COLLclassifications.Take(l_COLLdata.Count / 2);
+IEnumerable<object> l_COLLtrainClassAmounts = l_COLLclassificationAmounts.Take(l_COLLclassificationAmounts.Count / 2);
+IEnumerable<object> l_COLLtrainDataAmounts = l_COLLdataAmounts.Take(l_COLLdataAmounts.Count / 2);
+List<DateTime> l_COLLtrainDates = l_COLLdates.Take(l_COLLdata.Count / 2).ToList();
 
 IEnumerable<object> l_COLLtestData = l_COLLdata.Skip(l_COLLdata.Count / 2);
 IEnumerable<object> l_COLLtestClassifications = l_COLLclassifications.Skip(l_COLLdata.Count / 2);
+IEnumerable<object> l_COLLtestClassAmounts = l_COLLclassificationAmounts.Skip(l_COLLclassificationAmounts.Count / 2);
+IEnumerable<object> l_COLLtestDataAmounts = l_COLLdataAmounts.Skip(l_COLLdataAmounts.Count / 2);
+List<DateTime> l_COLLtestDates = l_COLLdates.Skip(l_COLLdataAmounts.Count / 2).ToList();
 
 
 Arborist l_OBJarborist = new Arborist(l_COLLtrainData, l_COLLtrainClassifications, 1000, 100, 2);
 
 Console.WriteLine("Planting Forest...");
-l_OBJarborist.PlantForestTimeSeries(5, 5);
+l_OBJarborist.PlantForestTimeSeries(12, 12);
 //l_OBJarborist.PlantForestCategorization(4);
 
-IEnumerable<object> l_COLLpredictionTest = (IEnumerable<object>)l_COLLtestData.First();
-Console.WriteLine("\nMaking Prediction...");
-Console.WriteLine(l_OBJarborist.Predict(l_COLLpredictionTest));
-Console.WriteLine(l_COLLtrainClassifications.Last().ToString());
-Console.WriteLine(l_COLLtestClassifications.First().ToString());
+DataTable l_OBJpredictionTable = new DataTable();
+l_OBJpredictionTable.Columns.Add("ModelID", Type.GetType("System.Int32"));
+l_OBJpredictionTable.Columns.Add("AsOfDate", Type.GetType("System.DateTime"));
+l_OBJpredictionTable.Columns.Add("PredictedGDP", Type.GetType("System.Double"));
+l_OBJpredictionTable.Columns.Add("RangeHigh", Type.GetType("System.Double"));
+l_OBJpredictionTable.Columns.Add("RangeLow", Type.GetType("System.Double"));
+l_OBJpredictionTable.Columns.Add("Actual", Type.GetType("System.Double"));
+l_OBJpredictionTable.Columns.Add("isCorrect", Type.GetType("System.Boolean"));
+
+Console.WriteLine("\nMaking Predictions...");
+while(l_COLLtestData.Count() > 0)
+{
+    IEnumerable<object> l_COLLpredictionTest = (IEnumerable<object>)l_COLLtestData.First();
+    object[] l_COLLresults = l_OBJarborist.Predict(l_COLLpredictionTest);
+
+    double l_DBLprediction = ((double)l_COLLresults[0] / 100) * Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last()) + Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last());
+    double l_DBLhigh = ((double)l_COLLresults[1] / 100) * Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last()) + Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last());
+    double l_DBLlow = ((double)l_COLLresults[2] / 100) * Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last()) + Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last());
+
+    Dictionary<string, double> l_COLLoutputProcessed = OutputProcessor.GetPredictiveRange(l_DBLhigh, l_DBLlow, l_DBLprediction, (int)l_COLLresults[3], (int)l_COLLresults[4]);
+
+    DataRow l_OBJpredictionRow = l_OBJpredictionTable.NewRow();
+    l_OBJpredictionRow[0] = 5;
+    l_OBJpredictionRow[1] = l_COLLtestDates.First();
+    l_OBJpredictionRow[2] = l_DBLprediction;
+    l_OBJpredictionRow[3] = l_DBLhigh;
+    l_OBJpredictionRow[4] = l_DBLlow;
+    l_OBJpredictionRow[5] = l_COLLtestClassAmounts.First();
+    l_OBJpredictionRow[6] = (l_DBLhigh > Convert.ToDouble((decimal)l_COLLtestClassAmounts.First()) && l_DBLlow < Convert.ToDouble((decimal)l_COLLtestClassAmounts.First()));
+    l_OBJpredictionTable.Rows.Add(l_OBJpredictionRow);
+
+    l_COLLtrainData = l_COLLtrainData.Append(l_COLLtestData.First());
+    l_COLLtestData = l_COLLtestData.Skip(1);
+
+    l_COLLtrainClassifications = l_COLLtrainClassifications.Append(l_COLLtestClassifications.First());
+    l_COLLtestClassifications = l_COLLtestClassifications.Skip(1);
+
+    l_COLLtrainClassAmounts = l_COLLtrainClassAmounts.Append(l_COLLtestClassAmounts.First());
+    l_COLLtestClassAmounts = l_COLLtestClassAmounts.Skip(1);
+
+    l_COLLtrainDates = l_COLLtrainDates.Append(l_COLLtestDates.First()).ToList();
+    l_COLLtestDates = l_COLLtestDates.Skip(1).ToList();
+
+    l_OBJarborist = new Arborist(l_COLLtrainData, l_COLLtrainClassifications, 1000, 100, 2);
+    l_OBJarborist.PlantForestTimeSeries(12, 12);
+}
+
+using(SqlConnection l_OBJsqlConnection = new SqlConnection("Server=localhost;Database=WGUCapstone;Integrated Security=SSPI;TrustServerCertificate=True"))
+{
+    l_OBJsqlConnection.Open();
+
+    SqlCommand l_OBJsqlCommand = l_OBJsqlConnection.CreateCommand();
+    l_OBJsqlCommand.CommandType = CommandType.StoredProcedure;
+    l_OBJsqlCommand.Parameters.Add(new SqlParameter("@PredictionResults", l_OBJpredictionTable));
+
+    l_OBJsqlCommand.CommandText = "dbo.InsPredictionResults";
+
+    l_OBJsqlCommand.ExecuteNonQuery();
+
+    l_OBJsqlConnection.Close();
+}
+
+//double l_DBLprediction = ((double)l_COLLresults[0] / 100) * Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last()) + Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last());
+//double l_DBLhigh = ((double)l_COLLresults[1] / 100) * Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last()) + Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last());
+//double l_DBLlow = ((double)l_COLLresults[2] / 100) * Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last()) + Convert.ToDouble((decimal)l_COLLtrainClassAmounts.Last());
+//Dictionary<string, double> l_COLLoutputProcessed = OutputProcessor.GetPredictiveRange(l_DBLhigh, l_DBLlow, l_DBLprediction, (int)l_COLLresults[3], (int)l_COLLresults[4]);
+
+
+//Console.WriteLine($"Predicted Value: { l_DBLprediction }");
+//Console.WriteLine($"High: {l_COLLoutputProcessed["Predictive High"]}");
+//Console.WriteLine($"Low: {l_COLLoutputProcessed["Predictive Low"]}");
+//Console.WriteLine($"Last: {l_COLLtrainClassAmounts.Last().ToString()}");
+//Console.WriteLine($"Actual: {((decimal)l_COLLtestClassifications.First() / 100) * (decimal)l_COLLtrainClassAmounts.Last() + (decimal)l_COLLtrainClassAmounts.Last()}");
+//Console.WriteLine($"Date: {l_COLLtestDates.First().ToString()}");
 
 //Console.WriteLine($"{l_OBJarborist.Predict(new List<object> { 4, true, true, 500, 40000 }).ToString()}");
 
@@ -173,5 +270,5 @@ Console.WriteLine(l_COLLtestClassifications.First().ToString());
 //Console.WriteLine();
 //Console.WriteLine(l_OBJtestTree.RootNode.Predict(new object[] { "Red" }));
 
-
+Console.WriteLine("Done");
 Console.ReadLine();
