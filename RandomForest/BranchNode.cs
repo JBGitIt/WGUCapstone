@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RandomForest
 {
-    internal class BranchNode
+    public class BranchNode
     {
         private bool c_BOOLisNumeric;
         private int c_INTfeatureIndex;
@@ -17,15 +17,21 @@ namespace RandomForest
 
         internal DecisionTree LeftSubtree { get => c_OBJleftSubtree; set => c_OBJleftSubtree = value; }
         internal DecisionTree RightSubtree { get => c_OBJrightSubtree; set => c_OBJrightSubtree = value; }
-
         internal object Value { get => c_OBJvalue; }
+
+        public bool Numeric { get { return c_BOOLisNumeric; } }
+        public int FeatureIndex { get { return c_INTfeatureIndex; } }
+        public object Threshold { get { return c_OBJthreshold; } }
+        public object NodeValue { get { return c_OBJvalue; } }
+        public DecisionTree LeftBranch { get {  return c_OBJleftSubtree; } }
+        public DecisionTree RightBranch { get { return c_OBJrightSubtree; } }
 
         internal bool CheckLeaf()
         {
             return c_OBJvalue is null;
         }
 
-        internal BranchNode(bool v_BOOLisNumeric, int v_INTfeatureIndex, object r_OBJthreshold, object r_OBJvalue, DecisionTree r_OBJleft, DecisionTree r_OBJright)
+        public BranchNode(bool v_BOOLisNumeric, int v_INTfeatureIndex, object r_OBJthreshold, object r_OBJvalue, DecisionTree r_OBJleft, DecisionTree r_OBJright)
         {
             c_BOOLisNumeric = v_BOOLisNumeric;
             c_INTfeatureIndex = v_INTfeatureIndex;

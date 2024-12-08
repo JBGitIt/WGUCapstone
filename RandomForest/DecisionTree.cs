@@ -14,7 +14,7 @@ namespace RandomForest
     /// Class is designed such that the data can be submitted as either objects or arrays. Any collection outside of arrays will not have the expected behavior and will fail to form a tree.
     /// Features in the data should be limited to simple types and objects that implement the IComparable Interface for equality.
     /// </summary>
-    internal class DecisionTree
+    public class DecisionTree
     {
         private int c_INTdepth = 0;          //Current depth of the tree, default to 0 on instantiation.
         private int c_INTmaxDepth;           //Maximum depth of the tree
@@ -22,6 +22,11 @@ namespace RandomForest
 
         private BranchNode c_OBJrootNode;
         private IEnumerable<BranchNode> c_COLLbranches;
+
+        public int Depth { get { return c_INTdepth; } }
+        public int MaxDepth {  get { return c_INTmaxDepth; } }
+        public int MinSamples { get {  return c_INTminSamplesSplit; } }
+        public BranchNode Root { get { return c_OBJrootNode; } }
 
         internal BranchNode RootNode { get => c_OBJrootNode; set => c_OBJrootNode = value; }
 
@@ -42,6 +47,14 @@ namespace RandomForest
             c_INTdepth = v_INTdepth;
             c_OBJrootNode = r_OBJrootNode;
         }
+
+        public DecisionTree(int v_INTdepth, int v_INTmaxDepth, int v_INTminSamplesSplit, BranchNode r_OBJrootNode) : this(v_INTdepth, v_INTmaxDepth)
+        {
+            this.c_INTminSamplesSplit = c_INTminSamplesSplit;
+            this.c_OBJrootNode = r_OBJrootNode;
+        }
+
+
 
         /// <summary>
         /// Recursive method to grow the decision tree until one of three things happens:
@@ -160,9 +173,9 @@ namespace RandomForest
 
             else
             {
-                double threshold;
+                decimal threshold;
 
-                if (double.TryParse(l_OBJbranchBud.Threshold.ToString(), out threshold))
+                if (decimal.TryParse(l_OBJbranchBud.Threshold.ToString(), out threshold))
                 {
                     RootNode = new BranchNode(true, l_OBJbranchBud.FeatureIndex, l_OBJbranchBud.Threshold);
                 }
@@ -510,8 +523,15 @@ namespace RandomForest
                     l_OBJclass = obj.Classification;
                 }
             }
-
-            return new BranchNode(false, -1, null, l_OBJclass, null, null);
+            decimal l_DECout;
+            if (decimal.TryParse(l_OBJclass.ToString(), out l_DECout))
+            {
+                return new BranchNode(true, -1, null, l_OBJclass, null, null);
+            }
+            else
+            {
+                return new BranchNode(false, -1, null, l_OBJclass, null, null);
+            }
         }
 
         internal object Predict(IEnumerable<object> r_COLLfeatures)

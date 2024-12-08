@@ -15,8 +15,11 @@ namespace RandomForest
         int c_INTmaxTrees;
         int c_INTmaxTreeDepth;
         int c_INTminSamplesToSplit;
+        int c_INTforestID;
 
         List<DecisionTree> c_COLLforest;
+
+        public List<DecisionTree> Forest { get { return c_COLLforest; } }
 
         public Arborist(IEnumerable<object> r_COLLdataSet, IEnumerable<object> r_COLLclassifications, int v_INTmaxTrees, int v_INTmaxTreeDepth, int v_INTminSamplesToSplit)
         {
@@ -118,22 +121,31 @@ namespace RandomForest
             }
         }
 
+        /// <summary>
+        /// Plants a forest to analyze time series data
+        /// </summary>
+        /// <param name="v_INTwindowWidth">Width of the window of timesteps included in each tree of the forest</param>
+        /// <param name="v_INTwindowStep">How many timesteps to move the window forward for each tree</param>
         public void PlantForestTimeSeries(int v_INTwindowWidth, int v_INTwindowStep)
         {
+            //always start at timestep 0 and included everything within the first window width
             int l_INTwindowStart = 0;
             int l_INTwindowEnd = v_INTwindowWidth;
 
+            //while the end of the current window is less than or equal to the length of our timeseries
             while (l_INTwindowEnd <= c_COLLdataSet.Count())
             {
                 List<object> l_COLLslidingWindowData = new List<object>();
                 List<object> l_COLLslidingWindowClassifications = new List<object>();
 
+                //grab the elements that correspond to each step in our current window
                 for (int i = l_INTwindowStart; i < l_INTwindowEnd; i++)
                 {
                     l_COLLslidingWindowData.Add(c_COLLdataSet.ElementAt(i));
                     l_COLLslidingWindowClassifications.Add(c_COLLclassifications.ElementAt(i));
                 }
 
+                //Plant a tree using the selected elements
                 c_COLLforest.Add(PlantTree(l_COLLslidingWindowData, l_COLLslidingWindowClassifications));
 
                 if (l_INTwindowEnd + v_INTwindowStep > c_COLLdataSet.Count())
