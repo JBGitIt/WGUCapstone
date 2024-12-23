@@ -226,6 +226,13 @@ while(l_COLLtestData.Count() > 0)
 
     l_OBJarborist = new Arborist(l_COLLtrainData, l_COLLtrainClassifications, 1000, 100, 2);
     l_OBJarborist.PlantForestTimeSeries(12, 12);
+
+    Console.WriteLine($"Predicted Value: {l_DBLprediction}");
+    Console.WriteLine($"High: {l_COLLoutputProcessed["Predictive High"]}");
+    Console.WriteLine($"Low: {l_COLLoutputProcessed["Predictive Low"]}");
+    Console.WriteLine($"Last: {l_COLLtrainClassAmounts.Last().ToString()}");
+    Console.WriteLine($"Actual: {((decimal)l_COLLtestClassifications.First() / 100) * (decimal)l_COLLtrainClassAmounts.Last() + (decimal)l_COLLtrainClassAmounts.Last()}");
+    Console.WriteLine($"Date: {l_COLLtestDates.First().ToString()}");
 }
 
 using(SqlConnection l_OBJsqlConnection = new SqlConnection("Server=localhost;Database=WGUCapstone;Integrated Security=SSPI;TrustServerCertificate=True"))
@@ -249,7 +256,7 @@ using(SqlConnection l_OBJsqlConnection = new SqlConnection("Server=localhost;Dat
 //Dictionary<string, double> l_COLLoutputProcessed = OutputProcessor.GetPredictiveRange(l_DBLhigh, l_DBLlow, l_DBLprediction, (int)l_COLLresults[3], (int)l_COLLresults[4]);
 
 
-//Console.WriteLine($"Predicted Value: { l_DBLprediction }");
+//Console.WriteLine($"Predicted Value: {l_DBLprediction}");
 //Console.WriteLine($"High: {l_COLLoutputProcessed["Predictive High"]}");
 //Console.WriteLine($"Low: {l_COLLoutputProcessed["Predictive Low"]}");
 //Console.WriteLine($"Last: {l_COLLtrainClassAmounts.Last().ToString()}");

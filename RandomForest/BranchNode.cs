@@ -59,31 +59,45 @@ namespace RandomForest
             c_OBJvalue = null;
         }
 
+        /// <summary>
+        /// This is the method used to make predictions.
+        /// It is recursive(ish) and will travers it's way down the tree until it hits a leafnode at which point that value will be passed back up the tree.
+        /// </summary>
+        /// <param name="r_COLLfeatures"></param>
+        /// <returns></returns>
         internal object Predict(IEnumerable<object> r_COLLfeatures)
         {
+            //if this node has a value then it must be a leaf and we simply return that value to the caller.
             if (c_OBJvalue is not null)
             {
                 return c_OBJvalue;
             }
+            //otherwise we continue traversing our way down the tree.
             else
             {
+                //we check if this is a numeric node
                 if (c_BOOLisNumeric)
                 {
+                    //then compare the value of the feature from r_COLLfeatures that corresponds to the the threshold of this node with said threshold.
                     if (Convert.ToDouble(r_COLLfeatures.ElementAt(c_INTfeatureIndex)) <= Convert.ToDouble(c_OBJthreshold))
                     {
+                        //if the value is less than the threshold we continue down the left branch
                         return LeftSubtree.RootNode.Predict(r_COLLfeatures);
                     }
                     else
                     {
+                        //if the value is greater than the threshold we continue down the right branch
                         return RightSubtree.RootNode.Predict(r_COLLfeatures);
                     }
                 }
                 else
                 {
+                    //if this is not a numeric node then the left branch is taken if the value is equal to our threshold value
                     if (r_COLLfeatures.ElementAt(c_INTfeatureIndex) == c_OBJthreshold)
                     {
                         return LeftSubtree.RootNode.Predict(r_COLLfeatures);
                     }
+                    //all other values go down the right branch.
                     else
                     {
                         return RightSubtree.RootNode.Predict(r_COLLfeatures);

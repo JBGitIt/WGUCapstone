@@ -143,6 +143,12 @@ namespace RandomForest
             }
         }
 
+        /// <summary>
+        /// This is a recursive method that will grow the decision tree until it either
+        /// reaches it's max depth, each path ends in a leaf, or we don't have enough values to split on.
+        /// </summary>
+        /// <param name="r_COLLdata">Dataset we are creating our tree from</param>
+        /// <param name="r_COLLclassifications">classifications for the rows in our dataset</param>
         internal void GrowTreeRF(IEnumerable<object> r_COLLdata, IEnumerable<object> r_COLLclassifications)
         {
             //We need the total count of records in our set and the unique classifications available for those records
@@ -156,41 +162,44 @@ namespace RandomForest
                 BranchNode l_OBJleaf = GrowLeaf(r_COLLclassifications);
 
                 RootNode = l_OBJleaf;
-
-                //Console.WriteLine(c_INTdepth);
             }
 
+            //Find the best split for this node
             NodeBud l_OBJbranchBud = GetBestSplit(SubsetFeatures(r_COLLdata), r_COLLclassifications);
 
+            //If the splitting function failed we create a leaf
             if (l_OBJbranchBud is null)
             {
                 BranchNode l_OBJleaf = GrowLeaf(r_COLLclassifications);
 
                 RootNode = l_OBJleaf;
-
-                //Console.WriteLine(c_INTdepth);
             }
 
+            //otherwise we produce out BranchNode
             else
             {
                 decimal threshold;
 
+                //if the threshold is a numeric value this is a numeric node
                 if (decimal.TryParse(l_OBJbranchBud.Threshold.ToString(), out threshold))
                 {
                     RootNode = new BranchNode(true, l_OBJbranchBud.FeatureIndex, l_OBJbranchBud.Threshold);
                 }
 
+                //otherwise it's not a numeric node
                 else
                 {
                     RootNode = new BranchNode(false, l_OBJbranchBud.FeatureIndex, l_OBJbranchBud.Threshold);
                 }
 
+                //if we have data for the left branch we produce a subtree based on that data
                 if (l_OBJbranchBud.LeftSplit.Count > 0)
                 {
                     DecisionTree l_OBJleftTree = new DecisionTree(c_INTmaxDepth, c_INTdepth + 1);
                     RootNode.LeftSubtree = l_OBJleftTree;
                     l_OBJleftTree.GrowTreeRF(l_OBJbranchBud.LeftSplit.Select((row, index) => { return r_COLLdata.ElementAt(index); }), l_OBJbranchBud.LeftSplit.Select(row => { return row.Key; }));
                 }
+                //if not the left branch ends in a leaf
                 else
                 {
                     DecisionTree l_OBJleftTree = new DecisionTree(c_INTmaxDepth, c_INTdepth + 1);
@@ -198,12 +207,14 @@ namespace RandomForest
                     RootNode.LeftSubtree = l_OBJleftTree;
                 }
 
+                //if we have data for the right branch we produce a subtree based on that data
                 if (l_OBJbranchBud.RightSplit.Count > 0)
                 {
                     DecisionTree l_OBJrightTree = new DecisionTree(c_INTmaxDepth, c_INTdepth + 1);
                     RootNode.RightSubtree = l_OBJrightTree;
                     l_OBJrightTree.GrowTreeRF(l_OBJbranchBud.RightSplit.Select((row, index) => { return r_COLLdata.ElementAt(index); }), l_OBJbranchBud.RightSplit.Select(row => { return row.Key; }));
                 }
+                //otherwise the right branch ends in a leaf
                 else
                 {
                     DecisionTree l_OBJrightTree = new DecisionTree(c_INTmaxDepth, c_INTdepth + 1);
@@ -213,20 +224,32 @@ namespace RandomForest
             }
         }
 
+        /// <summary>
+        /// Method to create a subset of available features. Method is a little clunky as when I designed this library I initially tried to make it handle objects and arrays.
+        /// Were I to create further iterations I would likely abandon this methodology and instead force the end user to put their data into DataTable objects to allow better control over data handling within and between methods.
+        /// </summary>
+        /// <param name="r_COLLdata">Collection of data we're working with</param>
+        /// <returns>Subset of <paramref name="r_COLLdata"/> containing only a partial number of the available features</returns>
         private IEnumerable<object> SubsetFeatures(IEnumerable<object> r_COLLdata)
         {
+            //First we check if the data is in arrays or objects
             if (r_COLLdata.First() is Array)
             {
+                //if we are dealing with arrays, we use the first one to get our list of features
                 Array l_COLLfirstArray = (Array)r_COLLdata.First();
 
                 int l_INTnumFeatures = l_COLLfirstArray.Length;
 
+                //We're using roughly 1/3 of the available features at each node
                 int l_INTnumFeaturesOutput = l_INTnumFeatures / 3;
 
+                //Random value for selecting features
                 Random l_OBJrandom = new Random();
 
+                //list to hold indices of selected features
                 List<int> l_COLLindexes = new List<int>();
 
+                //loop through random feature indices until we have the requisite number for our subset.
                 while (l_COLLindexes.Count < l_INTnumFeaturesOutput)
                 {
                     int l_INTnextRando = l_OBJrandom.Next(l_INTnumFeatures);
@@ -237,6 +260,7 @@ namespace RandomForest
                     }
                 }
 
+                //Build our new data collection including only the selected features.
                 return r_COLLdata.Select(row =>
                 {
                     Array l_COLLarray = (Array)row;
@@ -250,16 +274,20 @@ namespace RandomForest
                     return (object)l_COLLnewArray;
                 });
             }
+            //if we don't have a collection of arrays we assume it's a collection of objects where the properties = our data features
             else
             {
+                //variable to hold the number of features present
                 int l_INTnumFeatures = 0;
-
+                //variable to hold the number of features present in our output
                 int l_INTnumFeaturesOutput = 0;
-
+                //for randomness
                 Random l_OBJrandom = new Random();
 
+                //use the first object in the list to get our list of features
                 IEnumerable<List<object>> l_COLLbuffer = r_COLLdata.Select(row =>
                 {
+                    //using reflection to get a list of properties.
                     PropertyInfo[] props = row.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
                     List<object> values = new List<object>();
@@ -271,13 +299,16 @@ namespace RandomForest
 
                     l_INTnumFeatures = values.Count;
 
-                    l_INTnumFeaturesOutput = l_INTnumFeatures / 2;
+                    //use roughly 1/3 of the available features
+                    l_INTnumFeaturesOutput = l_INTnumFeatures / 3;
 
                     return values;
                 }).ToList();
 
+                //collection to hold indexes of features
                 List<int> l_COLLindexes = new List<int>();
 
+                //loop through random feature indices until we have the requisite number for our subset.
                 while (l_COLLindexes.Count < l_INTnumFeaturesOutput)
                 {
                     int l_INTnextRando = l_OBJrandom.Next(l_INTnumFeatures);
@@ -288,6 +319,7 @@ namespace RandomForest
                     }
                 }
 
+                //Build our new data collection including only the selected features.
                 IEnumerable<object> x = l_COLLbuffer.Select(row =>
                 {
                     Array l_COLLarray = row.ToArray();
@@ -338,29 +370,37 @@ namespace RandomForest
         }
 
         /// <summary>
-        /// Determines the best way to split at 
+        /// Determines the best way to split for <paramref name="l_COLLdataSet"/> and <paramref name="l_COLLclassifications"/> 
         /// </summary>
-        /// <param name="l_COLLdataSet"></param>
-        /// <param name="l_COLLclassifications"></param>
-        /// <returns></returns>
+        /// <param name="l_COLLdataSet">Data set we're trying to split</param>
+        /// <param name="l_COLLclassifications">Values we are trying to analyze</param>
+        /// <returns>A NodeBud object representing the best way to split at this node</returns>
         internal NodeBud GetBestSplit(IEnumerable<object> l_COLLdataSet, IEnumerable<object> l_COLLclassifications)
         {
+            //object we'll be returning
             NodeBud l_OBJbranchBud = null;
 
+            //if we have no data, we can't perform a split and we'll return null, calling method must handle this
             if (l_COLLdataSet.Count() <= 1)
             {
                 return l_OBJbranchBud;
             }
 
+            //things get considerably more clunky beyond this point but I was to far in with to little time to go back and re-factor everything.
+
+            //This collection is for holding the arrays we'll pass to the ProcessArrays() method.
             IEnumerable<object> l_COLLconvertedCollections = new List<object>();
 
             foreach (object obj in l_COLLdataSet)
             {
+                //we figure out if the objects are already arrays, if so we pass them directly into the ProcessArrays() method
                 if (obj is IEnumerable enumerable)
                 {
+                    //result of ProcessArrays is assigned directly to our return value
                     l_OBJbranchBud = ProcessArrays(l_COLLdataSet, l_COLLclassifications);
                     break;
                 }
+                //Otherwise we convert them.
                 else
                 {
                     PropertyInfo[] props = obj.GetType().GetProperties();
@@ -373,6 +413,7 @@ namespace RandomForest
                 }
             }
 
+            //if we successfully converted objects to arrays, we pass those arrays to the ProcessArrays() method and assign the result directly to our return value
             if (l_COLLconvertedCollections.Count() > 0)
             {
                 l_OBJbranchBud = ProcessArrays(l_COLLconvertedCollections, l_COLLclassifications);
@@ -381,37 +422,55 @@ namespace RandomForest
             return l_OBJbranchBud;
         }
 
+        /// <summary>
+        /// This is by far the clunkiest method in the whole library.
+        /// It takes the collection of data as arrays and calculates the best split.
+        /// This method has two main branches, one that deals with numeric data and one that deals with non-numeric data(all treated as categorical data for our purposes)
+        /// </summary>
+        /// <param name="l_COLLconvertedArrays">data set we're processing</param>
+        /// <param name="l_COLLclassifications">the analyzed value for each row of data</param>
+        /// <returns>A NodeBud object representing the best way to split at this node</returns>
         private NodeBud ProcessArrays(IEnumerable<object> l_COLLconvertedArrays, IEnumerable<object> l_COLLclassifications)
         {
+            //variables for tracking the best feature and the splits associated with it
             int l_INTbestFeatureIndex = -1;
             object l_OBJbestThreshold = null;
             List<KeyValuePair<object, object>> l_COLLleftPairs = new List<KeyValuePair<object, object>>();
             List<KeyValuePair<object, object>> l_COLLrightPairs = new List<KeyValuePair<object, object>>();
 
+            //Initial impurity is set to Infinity to ensure it is greater than whatever our intial calculation is.
             double l_DBLimpurity = Double.PositiveInfinity;
 
+            //we use the first array in the collection to get our feature count and to test if each feature is a numeric feature or not.
             IEnumerable<object> l_OBJfirstCollection = new List<object>();
 
+            //cast our first array to an array of objects, clunky, not elegant, but the overall product functions. Future iterations will have better handling of types and data.
             if (l_COLLconvertedArrays.First() is IEnumerable enumerable)
             {
                 l_OBJfirstCollection = enumerable.Cast<object>();
             }
 
+            //Get the count of available features
             int l_INTnumFeatures = l_OBJfirstCollection.Count();
 
+            //loop through each feature to find the best one on which to split
             foreach (int i in Enumerable.Range(0, l_INTnumFeatures))
             {
+                //first we determine if this is a numeric feature
                 double num = 0;
                 if (double.TryParse(l_OBJfirstCollection.First().ToString(), out num))
                 {
+                    //Get a hashset of all the unique values for this feature
                     HashSet<double?> l_COLLthresholds = new HashSet<double?>(
                         l_COLLconvertedArrays
                         .Select(row => double.TryParse((row as Array)?.GetValue(i)?.ToString(), out num) ? num : (double?)null)
                         .Where(v => v.HasValue)
                     );
 
+                    //check each value to see which one splits the full data set best
                     foreach (double l_DBLthreshold in l_COLLthresholds)
                     {
+                        //This series of LINQ statements will split the dataset into values greater than the current threshold, and values less than the current threshold
                         Dictionary<int, List<KeyValuePair<object, object>>> l_COLLsplits = l_COLLconvertedArrays
                             .Select((row, index) =>
                             {
@@ -430,6 +489,7 @@ namespace RandomForest
                             .GroupBy(pair => pair.Item1)
                             .ToDictionary(g => g.Key, g => g.Select(v => v.Item2).ToList());
 
+                        //These two if blocks are necessary incase we have a split in which all the values go on one branch
                         if (!l_COLLsplits.ContainsKey(0))
                         {
                             l_COLLsplits[0] = new List<KeyValuePair<object, object>>();
@@ -439,12 +499,14 @@ namespace RandomForest
                             l_COLLsplits[1] = new List<KeyValuePair<object, object>>();
                         }
 
+                        //Perform the impurity calculations, we have used weighted Gini Impurity for our model.
                         double l_DBLleftImpurity = l_COLLsplits[0].Any() ? CalcGiniImpurity(l_COLLsplits[0].Select(row => { return row.Key; })) : 0;
 
                         double l_DBLrightImpurity = l_COLLsplits[1].Any() ? CalcGiniImpurity(l_COLLsplits[1].Select(row => { return row.Key; })) : 0;
 
                         double l_DBLweightedImpurity = (l_COLLsplits[0].Count() * l_DBLleftImpurity + l_COLLsplits[1].Count() * l_DBLrightImpurity) / l_COLLconvertedArrays.Count();
 
+                        //see if this split is better than the current best
                         if (l_DBLweightedImpurity < l_DBLimpurity)
                         {
                             l_DBLimpurity = l_DBLweightedImpurity;
@@ -455,16 +517,19 @@ namespace RandomForest
                         }
                     }
                 }
-
+                //If it's not a numeric feature we treat it as categorical
                 else
                 {
+                    //Get a hashset of all the unique values for the feature
                     HashSet<object?> l_COLLthresholds = new HashSet<object?>(l_COLLconvertedArrays
                         .Select(row => (row as Array)?.GetValue(i))
                         .ToList()
                     );
 
+                    //test each unique value as a threshold
                     foreach (object l_OBJthreshold in l_COLLthresholds)
                     {
+                        //this series of LINQ statements will split the dataset into values equal to the threshold and values not equal to the threshold
                         Dictionary<int, List<KeyValuePair<object, object?>>> l_COLLsplits = l_COLLconvertedArrays
                             .Select((row, index) =>
                             {
@@ -481,6 +546,7 @@ namespace RandomForest
                             .GroupBy(pair => pair.Item1)
                             .ToDictionary(g => g.Key, g => g.Select(v => v.Item2).ToList());
 
+                        //these if blocks are necessary incase all the data flows into one branch.
                         if (!l_COLLsplits.ContainsKey(0))
                         {
                             l_COLLsplits[0] = new List<KeyValuePair<object, object?>>();
@@ -490,11 +556,13 @@ namespace RandomForest
                             l_COLLsplits[1] = new List<KeyValuePair<object, object?>>();
                         }
 
+                        //Perform the impurity calculations, we have used weighted Gini Impurity for our model.
                         double l_DBLleftImpurity = l_COLLsplits[0].Any() ? CalcGiniImpurity(l_COLLsplits[0].Select(row => { return row.Key; })) : 0;
                         double l_DBLrightImpurity = l_COLLsplits[1].Any() ? CalcGiniImpurity(l_COLLsplits[1].Select(row => { return row.Key; })) : 0;
 
                         double l_DBLweightedImpurity = (l_COLLsplits[0].Count() * l_DBLleftImpurity + l_COLLsplits[1].Count() * l_DBLrightImpurity) / l_COLLconvertedArrays.Count();
 
+                        //see if this split is better than the current best
                         if (l_DBLweightedImpurity < l_DBLimpurity)
                         {
                             l_DBLimpurity = l_DBLweightedImpurity;
@@ -506,6 +574,7 @@ namespace RandomForest
                     }
                 }
             }
+            //create and return our NodeBud
             return new NodeBud(l_DBLimpurity, l_INTbestFeatureIndex, l_OBJbestThreshold, l_COLLleftPairs, l_COLLrightPairs);
         }
 

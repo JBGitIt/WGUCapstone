@@ -122,7 +122,7 @@ namespace RandomForest
         }
 
         /// <summary>
-        /// Plants a forest to analyze time series data
+        /// Plants a forest to analyze time series data. We take a windowed approach to breaking up the data for our trees.
         /// </summary>
         /// <param name="v_INTwindowWidth">Width of the window of timesteps included in each tree of the forest</param>
         /// <param name="v_INTwindowStep">How many timesteps to move the window forward for each tree</param>
@@ -189,12 +189,21 @@ namespace RandomForest
             }
         }
 
+        /// <summary>
+        /// Instantiates and returns a new decision tree based on the values in <paramref name="r_COLLdataSet"/> and <paramref name="r_COLLclassification"/>.
+        /// </summary>
+        /// <param name="r_COLLdataSet">Dataset to base our DecisionTree on</param>
+        /// <param name="r_COLLclassification">The classifications for the dataset we're basing our DecisionTree on.</param>
+        /// <returns>DecisionTree build from <paramref name="r_COLLdataSet"/> and <paramref name="r_COLLclassification"/></returns>
         private DecisionTree PlantTree(IEnumerable<object> r_COLLdataSet, IEnumerable<object> r_COLLclassification)
         {
+            //DecisionTree to return
             DecisionTree l_OBJnewTree = new DecisionTree(c_INTmaxTreeDepth, 0);
 
+            //Growing the tree
             l_OBJnewTree.GrowTreeRF(r_COLLdataSet, r_COLLclassification);
 
+            //returning the tree
             return l_OBJnewTree;
         }
 
